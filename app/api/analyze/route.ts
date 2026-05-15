@@ -48,21 +48,87 @@ severity 字段说明：
 
 如果未发现明显质量问题，issues 返回空数组，仍需给出该阶段的现场自测项目。
 
-只输出 JSON，不要输出其他内容。语言用中文，专业但通俗易懂。`;
+重要要求（必须遵守）：
+1. 只输出纯 JSON，不要用 markdown 代码块包裹，不要添加任何说明文字
+2. 确保 JSON 格式合法，description 和 suggestion 字段内容中不要包含花括号 { 或 }
+3. 不要在 JSON 前后添加任何额外内容`;
+}
+
+/** 深度感知的 JSON 提取：正确匹配最外层花括号，忽略字符串内的 {} */
+function extractJSON(text: string): string {
+  const start = text.indexOf("{");
+  if (start === -1) throw new Error("未在 AI 响应中找到有效 JSON");
+
+  let depth = 0;
+  let inString = false;
+  let escape = false;
+
+  for (let i = start; i < text.length; i++) {
+    const char = text[i];
+
+    if (escape) {
+      escape = false;
+      continue;
+    }
+
+    if (char === "\\" && inString) {
+      escape = true;
+      continue;
+    }
+
+    if (char === '"') {
+      inString = !inString;
+      continue;
+    }
+
+    if (!inString) {
+      if (char === "{") depth++;
+      else if (char === "}") {
+        depth--;
+        if (depth === 0) {
+          return text.slice(start, i + 1);
+        }
+      }
+    }
+  }
+
+  throw new Error("未找到匹配的 JSON 结束括号");
+}
+
+/** 尝试修复常见的 JSON 格式问题 */
+function repairJSON(text: string): string {
+  return text.replace(/,\s*([}\]])/g, "$1");
 }
 
 function parseResponse(text: string): AnalyzeResponse {
-  const start = text.indexOf("{");
-  const end = text.lastIndexOf("}");
-  if (start === -1 || end === -1 || end <= start) {
-    throw new Error("未在 AI 响应中找到有效 JSON");
+  let parsed: Record<string, unknown>;
+
+  // Step 1: 移除 markdown 代码块标记
+  const cleaned = text.replace(/```json\n?/gi, "").replace(/```\n?/gi, "").trim();
+
+  // Step 2: 尝试直接解析
+  try {
+    parsed = JSON.parse(cleaned) as Record<string, unknown>;
+  } catch {
+    // Step 3: 用深度感知方式提取最外层 JSON
+    let extracted = "";
+    try {
+      extracted = extractJSON(cleaned);
+      parsed = JSON.parse(extracted) as Record<string, unknown>;
+    } catch {
+      // Step 4: 尝试修复常见问题后解析
+      try {
+        const repaired = repairJSON(extracted);
+        parsed = JSON.parse(repaired) as Record<string, unknown>;
+      } catch {
+        throw new Error("AI 返回了非法的 JSON 格式，请重试");
+      }
+    }
   }
-  const cleaned = text.slice(start, end + 1).trim();
-  const parsed = JSON.parse(cleaned);
 
   const VALID_SEVERITIES = new Set<IssueSeverity>(["rework", "fix", "minor"]);
 
-  const issues: Issue[] = (parsed.issues || []).map((item: Record<string, string>) => ({
+  const issues: Issue[] = ((parsed.issues as Array<Record<string, string>>) || []).map((item: Record<string, string>) => ({
     name: String(item.name || ""),
     description: String(item.description || ""),
     severity: VALID_SEVERITIES.has(item.severity as IssueSeverity)
@@ -71,7 +137,7 @@ function parseResponse(text: string): AnalyzeResponse {
     suggestion: String(item.suggestion || ""),
   }));
 
-  const selfCheckItems: SelfCheckItem[] = (parsed.selfCheckItems || []).map(
+  const selfCheckItems: SelfCheckItem[] = ((parsed.selfCheckItems as Array<Record<string, string>>) || []).map(
     (item: Record<string, string>) => ({
       name: String(item.name || ""),
       method: String(item.method || ""),
