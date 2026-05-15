@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-bg-page: #F5F5F5;
+  --color-bg-card: #FFFFFF;
+  --color-text-primary: #1A1A1A;
+  --color-text-secondary: #9CA3AF;
+  --color-text-tertiary: #C4C9D4;
+  --color-accent: #4F7FFF;
+  --color-accent-hover: #3D6EEE;
+  --color-accent-light: #EEF3FF;
+  --color-border: #EBEBEB;
+  --color-border-strong: #D1D5DB;
+  --color-severity-rework: #EF4444;
+  --color-severity-rework-bg: #FEF2F2;
+  --color-severity-fix: #F59E0B;
+  --color-severity-fix-bg: #FFFBEB;
+  --color-severity-minor: #22C55E;
+  --color-severity-minor-bg: #F0FDF4;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background-color: #F5F5F5;
+  color: #1A1A1A;
+  font-family: "Noto Sans SC", -apple-system, BlinkMacSystemFont, "PingFang SC",
+    "Microsoft YaHei", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
