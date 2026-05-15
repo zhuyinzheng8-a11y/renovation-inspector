@@ -100,6 +100,35 @@ function repairJSON(text: string): string {
   return text.replace(/,\s*([}\]])/g, "$1");
 }
 
+/** 正则兜底：暴力搜索响应中最长的合法 JSON 对象 */
+function extractJSONByRegex(text: string): string {
+  let best = "";
+  let bestLen = 0;
+  const stack: number[] = [];
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] === "{") stack.push(i);
+    else if (text[i] === "}") {
+      if (stack.length > 0) {
+        const start = stack.pop()!;
+        if (stack.length === 0) {
+          const candidate = text.slice(start, i + 1);
+          try {
+            JSON.parse(candidate);
+            if (candidate.length > bestLen) {
+              best = candidate;
+              bestLen = candidate.length;
+            }
+          } catch {
+            // not valid JSON, try next one
+          }
+        }
+      }
+    }
+  }
+  if (best) return best;
+  throw new Error("正则提取 JSON 失败");
+}
+
 function parseResponse(text: string): AnalyzeResponse {
   let parsed: Record<string, unknown>;
 
@@ -111,17 +140,17 @@ function parseResponse(text: string): AnalyzeResponse {
     parsed = JSON.parse(cleaned) as Record<string, unknown>;
   } catch {
     // Step 3: 用深度感知方式提取最外层 JSON
-    let extracted = "";
     try {
-      extracted = extractJSON(cleaned);
+      const extracted = extractJSON(cleaned);
       parsed = JSON.parse(extracted) as Record<string, unknown>;
     } catch {
-      // Step 4: 尝试修复常见问题后解析
+      // Step 4: 正则兜底（暴力搜索所有 {} 组合）
       try {
-        const repaired = repairJSON(extracted);
-        parsed = JSON.parse(repaired) as Record<string, unknown>;
+        const extracted = extractJSONByRegex(cleaned);
+        parsed = JSON.parse(extracted) as Record<string, unknown>;
       } catch {
-        throw new Error("AI 返回了非法的 JSON 格式，请重试");
+        const snippet = text.slice(0, 100).replace(/\n/g, " ");
+        throw new Error(`AI 返回了非法的 JSON 格式（"${snippet}..."），请重试`);
       }
     }
   }
