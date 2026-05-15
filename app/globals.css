@@ -30,7 +30,7 @@ html {
 body {
   background-color: #F5F5F5;
   color: #1A1A1A;
-  font-family: "Noto Sans SC", -apple-system, BlinkMacSystemFont, "PingFang SC",
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC",
     "Microsoft YaHei", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

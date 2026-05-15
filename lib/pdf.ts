@@ -63,7 +63,7 @@ function buildReportHTML(inspection: Inspection, result: InspectionResult): stri
 <html>
 <head><meta charset="utf-8">
 <style>
-body{font-family:'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif;padding:20px;margin:0;color:#1A1A1A;font-size:14px;line-height:1.6;background:#fff;}
+body{font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;padding:20px;margin:0;color:#1A1A1A;font-size:14px;line-height:1.6;background:#fff;}
 </style>
 </head>
 <body>
